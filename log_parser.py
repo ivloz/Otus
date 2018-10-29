@@ -26,7 +26,7 @@ LogFile = namedtuple("LastLog", ["name", "path", "date"])
 logger = logging.getLogger(__name__)
 
 
-def search_logs(directory: str, file_pattern: str) -> Optional[str]:
+def search_logs(directory: str, file_pattern: str) -> Optional[Iterable[str]]:
     if not directory:
         return None
 
