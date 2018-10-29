@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import json
 import logging
 
@@ -37,15 +39,18 @@ def load_config(config_path=None) -> Dict:
     try:
         with open(config_path) as f:
             extra_config = json.loads(f.read())
-    except FileNotFoundError:
+    except FileNotFoundError as e:
         logger.error("Wrong config file path: {}".format(config_path))
-        return default_config
-    except json.decoder.JSONDecodeError:
+        raise e
+    except json.decoder.JSONDecodeError as e:
         logger.error("Can't load config on file path: {}".format(config_path))
-        return default_config
+        raise e
     except Exception as e:
         logger.error(e, exc_info=True)
-        return default_config
+        raise e
+
+    if not isinstance(extra_config, dict):
+        raise TypeError("Config has not json format")
 
     config = dict(extra_config, **default_config)
     return config

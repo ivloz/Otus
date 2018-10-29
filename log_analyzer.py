@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import os
-import sys
 import logging
 import argparse
 
@@ -75,7 +74,7 @@ def analyze(config: Dict):
         status, stats = log_parser.parse(latest_log.path)
     except Exception as e:
         logger.exception("Can't parse log: ".format(e), exc_info=True)
-        return None
+        raise e
 
     if status == ParsingStatus.ERROR:
         logger.info("Parsing was finished with errors")
@@ -89,7 +88,7 @@ def analyze(config: Dict):
         generate_report(config["REPORT_DIR"], latest_log, top_metrics)
     except Exception as e:
         logger.exception("Can't generate report: {}".format(e), exc_info=True)
-        return None
+        raise e
 
 
 def main():
@@ -102,7 +101,7 @@ def main():
         analyze(config)
     except Exception as e:
         logger.exception(e, exc_info=True)
-        sys.exit(0)
+        raise e
 
 
 if __name__ == "__main__":

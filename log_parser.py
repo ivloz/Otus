@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 def search_logs(directory: str, file_pattern: str) -> Optional[Iterable[str]]:
+
     if not directory:
         return None
 
@@ -42,7 +43,7 @@ def filter_to_latest_log(files: Iterable[str]) -> Optional[Tuple[str, datetime]]
     for file in files:
         match = log_date_pattern.match(file)
         if not match:
-            return None
+            continue
 
         date_string = match.groupdict()["date"]
         date = datetime.strptime(date_string, "%Y%m%d")
@@ -50,13 +51,17 @@ def filter_to_latest_log(files: Iterable[str]) -> Optional[Tuple[str, datetime]]
             latest_date = date
             latest_log = file
 
+    if not latest_log or not latest_date:
+        return None
+
     return latest_log, latest_date
 
 
 def find_latest_log(directory: str, file_pattern: str) -> Optional[LogFile]:
     files = search_logs(directory, file_pattern)
     latest_log = filter_to_latest_log(files)
-    if not latest_log:
+
+    if latest_log is None:
         return None
 
     return LogFile(name=latest_log[0],

@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import re
 
 log_line_regexp = r'(?P<remote_address>\S+) ' \
@@ -18,5 +20,5 @@ log_line_pattern = re.compile(log_line_regexp)
 log_request_regexp = r'(?P<request_type>\w+) (?P<request_url>\S+) (?P<request_proto>\S+)'
 log_request_pattern = re.compile(log_request_regexp)
 
-log_date_regexp = "nginx-access-ui\.log-(?P<date>\d{7,8})\..*"
+log_date_regexp = "nginx-access-ui\.log-(?P<date>\d{7,8})($|(\.gz))"
 log_date_pattern = re.compile(log_date_regexp)
