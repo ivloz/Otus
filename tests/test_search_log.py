@@ -25,7 +25,7 @@ class SearchLogTestCase(unittest.TestCase):
         with patch('os.walk') as mock_walk:
             mock_walk.return_value = []
 
-        self.assertEqual(find_latest_log('dir', self.fnmatch_log_pattern).name,
+        self.assertEqual(find_latest_log('dir', self.fnmatch_log_pattern),
                          None)
 
 
