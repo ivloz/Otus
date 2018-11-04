@@ -125,7 +125,7 @@ def main():
     args = parse_args()
     config = load_config(args.config)
 
-    setup_logging({})
+    setup_logging(config)
 
     try:
         analyze(config)
