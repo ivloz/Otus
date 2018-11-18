@@ -10,6 +10,8 @@ import uuid
 from optparse import OptionParser
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
+from scoring import get_score
+
 SALT = "Otus"
 ADMIN_LOGIN = "admin"
 ADMIN_SALT = "42"
@@ -215,18 +217,6 @@ class OnlineScoreRequest(Structure):
     birthday = BirthDayField(required=False, nullable=True)
     gender = GenderField(required=False, nullable=True)
 
-    def get_score(self):
-        score = 0
-        if self.phone:
-            score += 1.5
-        if self.email:
-            score += 1.5
-        if self.birthday and self.gender:
-            score += 1.5
-        if self.first_name and self.last_name:
-            score += 0.5
-        return score
-
     def _validate(self):
         super()._validate()
         valid_pairs = [
@@ -272,7 +262,19 @@ def online_score_handler(ctx, params):
     if score_request.errors:
         return score_request.errors, INVALID_REQUEST
     ctx["has"] = score_request.not_empty_fields
-    score = 42 if params.is_admin else score_request.get_score()
+
+    if params.is_admin:
+        score = 42
+    else:
+        score = get_score(store=None,
+                          phone=score_request.phone,
+                          email=score_request.email,
+                          birthday=score_request.birthday,
+                          gender=score_request.birthday,
+                          first_name=score_request.first_name,
+                          last_name=score_request.last_name
+                          )
+
     return {"score": score}, OK
 
 
@@ -302,7 +304,7 @@ def method_handler(request, ctx, store):
 
     method = request['body'].get("method", "")
     if method not in method_handlers:
-        return "Call nonexistent method", BAD_REQUEST
+        return "Call nonexistent method", NOT_FOUND
     response, code = method_handlers[method](ctx, validated_params)
 
     return response, code
