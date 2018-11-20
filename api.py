@@ -92,41 +92,30 @@ class Structure(metaclass=StructureMeta):
                 self.errors.update({field.name: "field is required, but not filled"})
 
 
-class TypedField(FieldDescriptor):
-    type = object
+class Field(FieldDescriptor):
+    def __init__(self, type=object, nullable=False, required=False, *args, **kwargs):
+        super().__init__(*args)
+        self.type = type
+        self.nullable = nullable
+        self.required = required
 
     def __set__(self, instance, value):
         if not isinstance(value, self.type):
             raise ValidationError("Value {} has not suitable type ({})".format(value, self.type))
+        if not value and not self.nullable:
+            raise ValidationError("Field {} should not be nullable".format(self.name))
         super().__set__(instance, value)
 
 
-class RequiredField(FieldDescriptor):
-    def __init__(self, *args, required=False, **kwargs):
-        self.required = required
-        super().__init__(*args, **kwargs)
-
-
-class NullableField(FieldDescriptor):
-    def __init__(self, *args, nullable=False, **kwargs):
-        self.nullable = nullable
-        super().__init__(*args, **kwargs)
-
-    def _validate(self, instance, value):
-        super()._validate(instance, value)
-        if not value and not self.nullable:
-            raise ValidationError("Field {} should not be nullable".format(self.name))
-
-
-class CharField(TypedField, RequiredField, NullableField):
+class CharField(Field):
     type = str
 
 
-class DictField(TypedField, RequiredField, NullableField):
+class DictField(Field):
     type = dict
 
 
-class DateField(RequiredField, NullableField):
+class DateField(Field):
     def _validate(self, instance, value):
         super()._validate(instance, value)
         try:
@@ -148,7 +137,7 @@ class EmailField(CharField):
             raise ValidationError("Email {} has wrong format".format(self.name))
 
 
-class PhoneField(RequiredField, NullableField):
+class PhoneField(Field):
     def _validate(self, instance, value):
         super()._validate(instance, value)
         if value is None:
@@ -161,7 +150,7 @@ class PhoneField(RequiredField, NullableField):
             raise ValidationError("Phone should be started from 7")
 
 
-class BirthDayField(DateField, RequiredField, NullableField):
+class BirthDayField(DateField):
     def _validate(self, instance, value):
         super()._validate(instance, value)
         if value is None:
@@ -172,7 +161,7 @@ class BirthDayField(DateField, RequiredField, NullableField):
             raise ValidationError("Wrong birth day")
 
 
-class GenderField(TypedField, RequiredField, NullableField):
+class GenderField(Field):
     type = int
 
     def _validate(self, instance, value):
@@ -183,7 +172,7 @@ class GenderField(TypedField, RequiredField, NullableField):
             raise ValidationError("Wrong gender value")
 
 
-class ClientIDsField(TypedField, RequiredField, NullableField):
+class ClientIDsField(Field):
     type = list
 
     def _validate(self, instance, value):
@@ -257,9 +246,16 @@ def check_auth(request):
     return False
 
 
+def request_handler(request_structure, params):
+    request = request_structure(**params.arguments)
+    if request.errors:
+        return request.errors, INVALID_REQUEST
+    return request, OK
+
+
 def online_score_handler(ctx, params):
-    score_request = OnlineScoreRequest(**params.arguments)
-    if score_request.errors:
+    score_request, status = request_handler(OnlineScoreRequest, params)
+    if status == INVALID_REQUEST:
         return score_request.errors, INVALID_REQUEST
     ctx["has"] = score_request.not_empty_fields
 
@@ -279,8 +275,8 @@ def online_score_handler(ctx, params):
 
 
 def clients_interests_handler(ctx, params):
-    interests_request = ClientsInterestsRequest(**params.arguments)
-    if interests_request.errors:
+    interests_request, status = request_handler(ClientsInterestsRequest, params)
+    if status == INVALID_REQUEST:
         return interests_request.errors, INVALID_REQUEST
     ctx["nclients"] = len(interests_request.client_ids)
     return interests_request._interests(), OK
